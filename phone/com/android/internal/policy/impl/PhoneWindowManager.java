@@ -216,6 +216,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     static final int DEFAULT_ACCELEROMETER_ROTATION = 0;
     int mAccelerometerDefault = DEFAULT_ACCELEROMETER_ROTATION;
     boolean mHasSoftInput = false;
+
+    Long mTrackballHitTime;
+    static final long NEXT_DURATION = 400;
     
     int mPointerLocationMode = 0;
     PointerLocationView mPointerLocationView = null;
@@ -260,6 +263,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 
     // Behavior of ENDCALL Button.  (See Settings.System.END_BUTTON_BEHAVIOR.)
     int mEndcallBehavior;
+
+    boolean mTrackballWakeScreen=true;
 
     // Behavior of POWER button while in-call and screen on.
     // (See Settings.Secure.INCALL_POWER_BUTTON_BEHAVIOR.)
@@ -1742,7 +1747,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     /** {@inheritDoc} */
     public int interceptKeyTq(RawInputEvent event, boolean screenIsOn) {
         int result = ACTION_PASS_TO_USER;
-        final boolean isWakeKey = isWakeKeyTq(event);
+        boolean isWakeKey = isWakeKeyTq(event);
         // If screen is off then we treat the case where the keyguard is open but hidden
         // the same as if it were open and in front.
         // This will prevent any keys other than the power button from waking the screen
@@ -1753,7 +1758,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 
         if (false) {
             Log.d(TAG, "interceptKeyTq event=" + event + " keycode=" + event.keycode
-                  + " screenIsOn=" + screenIsOn + " keyguardActive=" + keyguardActive);
+                  + " screenIsOn=" + screenIsOn + " keyguardActive=" + keyguardActive + " isWakeKey=" + isWakeKey);
         }
 
         if (keyguardActive) {
@@ -1766,7 +1771,12 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 
                 final boolean isKeyDown =
                         (event.type == RawInputEvent.EV_KEY) && (event.value != 0);
-                if (isWakeKey && isKeyDown) {
+
+                // Detect if trackball pressed
+                boolean trackballDown = (event.type == RawInputEvent.EV_KEY && event.value != 0 
+                        && event.scancode == RawInputEvent.BTN_MOUSE);
+                
+                    if (isWakeKey && isKeyDown) {
 
                     // tell the mediator about a wake key, it may decide to
                     // turn on the screen depending on whether the key is
@@ -2022,8 +2032,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         // There are not key maps for trackball devices, but we'd still
         // like to have pressing it wake the device up, so force it here.
         int keycode = event.keycode;
+        int scancode = event.scancode;
         int flags = event.flags;
-        if (keycode == RawInputEvent.BTN_MOUSE) {
+        if (mTrackballWakeScreen && 
+                (keycode == RawInputEvent.BTN_MOUSE || scancode == RawInputEvent.BTN_MOUSE)) {
             flags |= WindowManagerPolicy.FLAG_WAKE;
         }
         return (flags
