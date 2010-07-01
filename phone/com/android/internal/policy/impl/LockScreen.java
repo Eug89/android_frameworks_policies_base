@@ -92,6 +92,8 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
     private String mDateFormatString;
     private java.text.DateFormat mTimeFormat;
     private boolean mEnableMenuKeyInLockScreen;
+    private boolean mTrackballUnlockScreen=true;                                        
+    private boolean mMenuUnlockScreen = false;
 
     /**
      * The status of this lock screen.
@@ -283,7 +285,8 @@ class LockScreen extends LinearLayout implements KeyguardScreen, KeyguardUpdateM
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_MENU && mEnableMenuKeyInLockScreen) {
+        if ((keyCode == KeyEvent.KEYCODE_MENU && mMenuUnlockScreen)||
+            (keyCode == KeyEvent.KEYCODE_DPAD_CENTER && mTrackballUnlockScreen)) {
             mCallback.goToUnlockScreen();
         }
         return false;
